@@ -1,0 +1,29 @@
+# LaTeX build files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.upa
+*.upb
+*.lpc
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Local generated clean examples
+examples/*_clean_source.tex
+examples/*.pdf
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/

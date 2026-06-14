@@ -1,0 +1,159 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{advisorreview}[2026/06/13 Advisor and reviewer PDF review annotations]
+
+\newif\ifadvisorreviewhighlight
+\newif\ifadvisorreviewcomments
+\newif\ifadvisorreviewhidelinks
+\newif\ifadvisorreviewcjk
+
+\advisorreviewhighlighttrue
+\advisorreviewcommentstrue
+\advisorreviewhidelinkstrue
+\advisorreviewcjkfalse
+
+\newcommand{\advisorreviewauthor}{Johnnie}
+
+\DeclareOption{advisor}{%
+  \advisorreviewhighlighttrue
+  \advisorreviewcommentstrue
+}
+\DeclareOption{review}{%
+  \advisorreviewhighlighttrue
+  \advisorreviewcommentstrue
+}
+\DeclareOption{reviewer}{%
+  \advisorreviewhighlighttrue
+  \advisorreviewcommentsfalse
+}
+\DeclareOption{clean}{%
+  \advisorreviewhighlightfalse
+  \advisorreviewcommentsfalse
+}
+\DeclareOption{final}{%
+  \advisorreviewhighlightfalse
+  \advisorreviewcommentsfalse
+}
+\DeclareOption{hidelinks}{\advisorreviewhidelinkstrue}
+\DeclareOption{visiblelinks}{\advisorreviewhidelinksfalse}
+\DeclareOption{cjk}{\advisorreviewcjktrue}
+\ExecuteOptions{advisor,hidelinks}
+\ProcessOptions\relax
+
+\RequirePackage{xcolor}
+
+\IfFileExists{soulutf8.sty}{%
+  \RequirePackage{soulutf8}
+}{%
+  \RequirePackage{soul}
+}
+
+\definecolor{advisorreviewblue}{RGB}{172,220,255}
+
+\ifadvisorreviewhidelinks
+  \PassOptionsToPackage{hidelinks}{hyperref}
+\fi
+
+\ifadvisorreviewcjk
+  \IfFileExists{CJKutf8.sty}{%
+    \RequirePackage{CJKutf8}
+    \AtBeginDocument{\begin{CJK*}{UTF8}{gbsn}}
+    \AtEndDocument{\end{CJK*}}
+  }{%
+    \PackageWarning{advisorreview}{Option cjk was requested, but CJKutf8.sty was not found}%
+  }
+\fi
+
+\newif\ifadvisorreviewpdfcomment
+\advisorreviewpdfcommentfalse
+\IfFileExists{pdfcomment.sty}{%
+  \RequirePackage{pdfcomment}
+  \advisorreviewpdfcommenttrue
+}{%
+  \PackageWarning{advisorreview}{pdfcomment.sty not found; advisor notes will use visible fallback markers}%
+}
+\providecommand\HyperFirstAtBeginDocument[1]{#1}
+
+\makeatletter
+\ifadvisorreviewhidelinks
+  \AtBeginDocument{%
+    \@ifpackageloaded{hyperref}{\hypersetup{hidelinks}}{}%
+  }
+\fi
+\makeatother
+
+\newcommand{\advisorreviewcomment}[1]{%
+  \ifadvisorreviewcomments
+    \ifadvisorreviewpdfcomment
+      \pdfcomment[icon=Comment,author={\advisorreviewauthor},subject={Revision note}]{#1}%
+    \else
+      \textsuperscript{\textcolor{red}{[review note]}}%
+    \fi
+  \fi
+}
+
+\newcommand{\pdfrevnote}[1]{%
+  \ifadvisorreviewcomments
+    \ifadvisorreviewpdfcomment
+      \pdfcomment[icon=Note,author={\advisorreviewauthor},subject={Revision note}]{#1}%
+    \else
+      \textsuperscript{\textcolor{red}{[review note]}}%
+    \fi
+  \fi
+}
+
+\newcommand{\pdfrevmark}[2]{%
+  \ifadvisorreviewhighlight
+    \begingroup
+      \sethlcolor{advisorreviewblue}%
+      \hl{#1}%
+    \endgroup
+    \advisorreviewcomment{#2}%
+  \else
+    #1%
+  \fi
+}
+
+\newcommand{\pdfrevmath}[2]{%
+  \ifadvisorreviewhighlight
+    \colorbox{advisorreviewblue}{#1}%
+    \advisorreviewcomment{#2}%
+  \else
+    #1%
+  \fi
+}
+
+\newcommand{\pdfrevformula}[2]{%
+  \ifadvisorreviewhighlight
+    \mathchoice
+      {\colorbox{advisorreviewblue}{$\displaystyle #1$}}%
+      {\colorbox{advisorreviewblue}{$\textstyle #1$}}%
+      {\colorbox{advisorreviewblue}{$\scriptstyle #1$}}%
+      {\colorbox{advisorreviewblue}{$\scriptscriptstyle #1$}}%
+    \ifadvisorreviewcomments
+      \mbox{\advisorreviewcomment{#2}}%
+    \fi
+  \else
+    #1%
+  \fi
+}
+
+\newcommand{\pdfrevblock}[2]{%
+  \ifadvisorreviewhighlight
+    \par\smallskip\noindent
+    \colorbox{advisorreviewblue}{%
+      \parbox{\dimexpr\linewidth-2\fboxsep\relax}{#1}%
+    }%
+    \advisorreviewcomment{#2}%
+    \par\smallskip
+  \else
+    #1%
+  \fi
+}
+
+\newcommand{\printpdfreviewlist}{%
+  \ifadvisorreviewcomments
+    \ifadvisorreviewpdfcomment
+      \listofpdfcomments
+    \fi
+  \fi
+}
