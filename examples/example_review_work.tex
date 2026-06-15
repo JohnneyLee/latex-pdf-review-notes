@@ -1,0 +1,34 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{advisorreview}
+\renewcommand{\advisorreviewauthor}{Johnnie}
+
+\begin{document}
+
+\section{Reviewed Manuscript Fragment}
+
+Consider a discrete-time system with state $x_k$ and a
+\pdfrevmark{network-induced sampling error}{Changed the wording to identify the source of the error.}
+$e_k$. The analysis uses the scalar condition
+\pdfrevmath{$\alpha_k>0$}{Changed the scalar condition to match the indexed gain used later.}
+in the Lyapunov estimate.
+
+\[
+  \pdfrevformula{V(x_{k+1})-V(x_k)\leq -\alpha_k\|x_k\|^2+\eta\|e_k\|^2}{Added the error term that appears in the next bound.}
+\]
+
+\pdfrevblock{%
+The model-based update introduces a memory variable $\zeta_k$ to carry the
+previous prediction error into the next sampling instant.
+}{Rewrote the sentence to explain why the memory variable is introduced.}
+
+\pdfrevnote{Checked the same notation pattern in the surrounding derivation; no other inconsistent occurrences were found.}
+
+\begin{equation*}
+  z_{k+1}=Az_k+B\pdfrevformula{\bigl(u_k+\Delta u_k\bigr)}{Clarified that the input correction is included in the update.}
+\end{equation*}
+
+\clearpage
+\printpdfreviewlist
+
+\end{document}
