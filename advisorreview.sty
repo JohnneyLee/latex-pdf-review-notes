@@ -41,13 +41,7 @@
 
 \RequirePackage{xcolor}
 
-\IfFileExists{soulutf8.sty}{%
-  \RequirePackage{soulutf8}
-}{%
-  \RequirePackage{soul}
-}
-
-\definecolor{advisorreviewblue}{RGB}{172,220,255}
+\definecolor{advisorreviewblue}{RGB}{0, 0, 255}
 
 \ifadvisorreviewhidelinks
   \PassOptionsToPackage{hidelinks}{hyperref}
@@ -103,10 +97,7 @@
 
 \newcommand{\pdfrevmark}[2]{%
   \ifadvisorreviewhighlight
-    \begingroup
-      \sethlcolor{advisorreviewblue}%
-      \hl{#1}%
-    \endgroup
+    {\color{advisorreviewblue}#1}%
     \advisorreviewcomment{#2}%
   \else
     #1%
@@ -115,7 +106,7 @@
 
 \newcommand{\pdfrevmath}[2]{%
   \ifadvisorreviewhighlight
-    \colorbox{advisorreviewblue}{#1}%
+    {\color{advisorreviewblue}#1}%
     \advisorreviewcomment{#2}%
   \else
     #1%
@@ -125,10 +116,10 @@
 \newcommand{\pdfrevformula}[2]{%
   \ifadvisorreviewhighlight
     \mathchoice
-      {\colorbox{advisorreviewblue}{$\displaystyle #1$}}%
-      {\colorbox{advisorreviewblue}{$\textstyle #1$}}%
-      {\colorbox{advisorreviewblue}{$\scriptstyle #1$}}%
-      {\colorbox{advisorreviewblue}{$\scriptscriptstyle #1$}}%
+      {{\color{advisorreviewblue}\displaystyle #1}}%
+      {{\color{advisorreviewblue}\textstyle #1}}%
+      {{\color{advisorreviewblue}\scriptstyle #1}}%
+      {{\color{advisorreviewblue}\scriptscriptstyle #1}}%
     \ifadvisorreviewcomments
       \mbox{\advisorreviewcomment{#2}}%
     \fi
@@ -140,9 +131,7 @@
 \newcommand{\pdfrevblock}[2]{%
   \ifadvisorreviewhighlight
     \par\smallskip\noindent
-    \colorbox{advisorreviewblue}{%
-      \parbox{\dimexpr\linewidth-2\fboxsep\relax}{#1}%
-    }%
+    {\color{advisorreviewblue}#1}%
     \advisorreviewcomment{#2}%
     \par\smallskip
   \else

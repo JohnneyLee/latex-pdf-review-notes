@@ -1,15 +1,15 @@
 # LaTeX PDF Review Notes
 
-Source-level LaTeX review notes that become highlighted PDF drafts for advisors and reviewers.
+Source-level LaTeX review notes that become blue revision-text PDF drafts for advisors and reviewers.
 
-`latex-pdf-review-notes` is a lightweight workflow for writing review markers directly in LaTeX source and producing PDF drafts with visible highlights and optional PDF comments.
+`latex-pdf-review-notes` is a lightweight workflow for writing review markers directly in LaTeX source and producing PDF drafts with visible blue revision text and optional PDF comments.
 
 It is designed for manuscript revision workflows where authors need to show changes to advisors, supervisors, collaborators, or reviewers without manually editing the generated PDF.
 
 ## What It Produces
 
-- Advisor / supervisor draft: blue highlights plus PDF bubble comments.
-- Reviewer-facing highlighted draft: blue highlights only, without private internal comments.
+- Advisor / supervisor draft: blue revision text plus PDF bubble comments.
+- Reviewer-facing marked draft: blue revision text only, without private internal comments.
 - Clean LaTeX source: a generated `.tex` file with all review macros removed.
 
 ## Files
@@ -28,7 +28,6 @@ LaTeX packages:
 - `pdfcomment`
 - `hyperref`
 - `xcolor`
-- `soul` or `soulutf8`
 - `amsmath` for `equation*`, `align`, and related math environments
 
 Runtime for clean-source export:
@@ -39,7 +38,7 @@ Runtime for clean-source export:
 PDF reader:
 
 - Acrobat Reader or SumatraPDF is recommended for viewing PDF bubble comments.
-- Browser PDF viewers may show highlights but not all comment details.
+- Browser PDF viewers may show the blue revision text but not all comment details.
 
 ## Quick Start
 
@@ -126,17 +125,17 @@ No output means the clean source passed this check.
 - Reviewer mode: hidden.
 - Clean source export: removed.
 
-### Highlight short text
+### Mark short text in blue
 
 ```latex
 \pdfrevmark{text}{comment}
 ```
 
-- Advisor mode: blue highlight plus PDF comment.
-- Reviewer mode: blue highlight only.
+- Advisor mode: blue text plus PDF comment.
+- Reviewer mode: blue text only.
 - Clean source export: keeps `text`.
 
-### Highlight inline math
+### Mark inline math in blue
 
 ```latex
 \pdfrevmath{$\alpha_k>0$}{comment}
@@ -144,7 +143,7 @@ No output means the clean source passed this check.
 
 Keep the full `$...$` in the first argument. This makes clean-source export straightforward.
 
-### Highlight display math content
+### Mark display math content in blue
 
 ```latex
 \[
@@ -154,7 +153,7 @@ Keep the full `$...$` in the first argument. This makes clean-source export stra
 
 Use inside display math environments such as `\[...\]` or `equation*`.
 
-### Highlight a sentence or short paragraph
+### Mark a sentence or short paragraph in blue
 
 ```latex
 \pdfrevblock{%
@@ -232,7 +231,7 @@ It uses balanced-brace parsing for the supported review macros. It is not a full
 - PDF comment display depends on the PDF reader.
 - `\pdfrevmark` is for short text, not arbitrary paragraphs.
 - `\pdfrevformula` should be used inside math environments.
-- Avoid fragile `\left...\right` constructions around complex highlighted formula fragments; fixed-size delimiters such as `\bigl...\bigr` are often more stable.
+- Avoid fragile `\left...\right` constructions around complex marked formula fragments; fixed-size delimiters such as `\bigl...\bigr` are often more stable.
 - The cleanup script handles the supported macros but may fail on unusual TeX category code tricks or verbatim-like content inside macro arguments.
 
 ## License
@@ -243,8 +242,8 @@ MIT License. See [LICENSE](LICENSE).
 
 这个工具用于论文修改阶段：
 
-- 给导师看的 PDF：蓝色高亮 + PDF 气泡批注，说明修改原因。
-- 给审稿人看的 PDF：只保留蓝色高亮，不显示内部批注。
+- 给导师看的 PDF：蓝色文字标记 + PDF 气泡批注，说明修改原因。
+- 给审稿人看的 PDF：只保留蓝色文字标记，不显示内部批注。
 - 最终干净源码：用脚本从带审阅宏的工作稿生成，不再包含 `advisorreview` 或 `\pdfrev...` 命令。
 
 推荐流程：
@@ -255,4 +254,3 @@ MIT License. See [LICENSE](LICENSE).
 4. 编译 `main_advisor.tex` 给导师看。
 5. 编译 `main_reviewer.tex` 给审稿人看。
 6. 修改确认后运行 `clean_advisor_review.cmd` 生成真正干净的 LaTeX 源码。
-
