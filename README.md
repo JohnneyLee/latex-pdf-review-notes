@@ -163,6 +163,30 @@ This revised sentence explains the model assumption more precisely.
 
 Do not put blank lines inside the first argument. Split multiple paragraphs into multiple `\pdfrevblock` calls.
 
+`\pdfrevblock{paragraph}{comment}` marks a sentence or short paragraph as blue text. It no longer places the text inside a blue background box.
+
+Do not wrap theorem-like environments with `\pdfrevblock`. This pattern can introduce unwanted vertical spacing before or after the environment:
+
+```latex
+% Not recommended
+\pdfrevblock{%
+\begin{theorem}
+The revised theorem statement.
+\end{theorem}
+}{comment}
+```
+
+Mark only the content inside the theorem-like environment:
+
+```latex
+% Recommended
+\begin{theorem}
+\pdfrevblock{The revised theorem statement.}{comment}
+\end{theorem}
+```
+
+The same rule applies to `theorem`, `lemma`, `proposition`, `corollary`, and similar environments. For a short phrase inside those environments, `\pdfrevmark{text}{comment}` is also a good alternative because it is less likely to affect paragraph spacing.
+
 ## Example
 
 Build the example advisor and reviewer PDFs:
