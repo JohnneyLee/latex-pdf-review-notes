@@ -7,6 +7,7 @@
 *.log
 *.out
 *.synctex.gz
+*.xdv
 *.toc
 *.lof
 *.lot
@@ -23,6 +24,7 @@ __pycache__/
 examples/*_clean_source.tex
 examples/*.pdf
 tests/_build/
+.advisorreview/
 
 # OS/editor
 .DS_Store

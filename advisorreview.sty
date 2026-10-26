@@ -77,6 +77,19 @@
 }
 \providecommand\HyperFirstAtBeginDocument[1]{#1}
 
+% The one-click builder can reuse this PDF instead of compiling this mode twice.
+\AtBeginDocument{%
+  \ifadvisorreviewhighlight
+    \ifadvisorreviewcomments
+      \typeout{ADVISORREVIEW-MODE:advisor}%
+    \else
+      \typeout{ADVISORREVIEW-MODE:reviewer}%
+    \fi
+  \else
+    \typeout{ADVISORREVIEW-MODE:clean}%
+  \fi
+}
+
 \makeatletter
 \ifadvisorreviewhidelinks
   \AtBeginDocument{%
