@@ -1,5 +1,5 @@
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{advisorreview}[2026/06/13 Advisor and reviewer PDF review annotations]
+\ProvidesPackage{advisorreview}[2026/10/26 Layout-preserving PDF review annotations]
 
 \newif\ifadvisorreviewhighlight
 \newif\ifadvisorreviewcomments
@@ -40,6 +40,16 @@
 \ProcessOptions\relax
 
 \RequirePackage{xcolor}
+\RequirePackage{iftex}
+
+% mathcolor preserves atom classes and handles scripts outside the marked text.
+\ifdefined\mathcolor\else
+  \InputIfFileExists{mathcolor.ltx}{}{%
+    \PackageWarning{advisorreview}{mathcolor.ltx not found; include complete
+      subscripts, superscripts and operator limits inside marked arguments}%
+  }%
+\fi
+\providecommand{\mathcolor}[2]{\begingroup\color{#1}#2\endgroup}
 
 \definecolor{advisorreviewblue}{RGB}{0, 0, 255}
 
@@ -75,69 +85,101 @@
 \fi
 \makeatother
 
-\newcommand{\advisorreviewcomment}[1]{%
+\makeatletter
+\newcommand{\advisorreview@comment}[2]{%
   \ifadvisorreviewcomments
     \ifadvisorreviewpdfcomment
-      \pdfcomment[icon=Comment,author={\advisorreviewauthor},subject={Revision note}]{#1}%
+      \ifvmode\leavevmode\fi
+      \begingroup
+        % Encode strings in text mode without adding a box to the math list.
+        \setbox\@tempboxa=\hbox{%
+          \pdfstringdef\advisorreview@contents{#2}%
+          \pdfstringdef\advisorreview@author{\advisorreviewauthor}%
+        }%
+        \def\advisorreview@annotation{%
+          /Subtype /Text /Name /#1 /C [0 0 1]
+          /T (\advisorreview@author) /Subj (Revision note)
+          /Contents (\advisorreview@contents) /Open false /F 4
+        }%
+        % Native annotation whatsits have no width, height or math atom class.
+        % The icon rectangle is above the baseline; it does not reserve space.
+        \ifPDFTeX
+          \pdfannot width 8bp height 18bp depth -10bp
+            {\advisorreview@annotation}%
+        \else\ifLuaTeX
+          \pdfextension annot width 8bp height 18bp depth -10bp
+            {\advisorreview@annotation}%
+        \else\ifXeTeX
+          \special{pdf: ann width 8bp height 18bp depth -10bp
+            <<\advisorreview@annotation>>}%
+        \else
+          \ifmmode
+            \vadjust{\smash{\hbox{\pdfcomment[icon=#1,
+              author={\advisorreviewauthor},subject={Revision note}]{#2}}}}%
+          \else
+            \pdfcomment[icon=#1,author={\advisorreviewauthor},
+              subject={Revision note}]{#2}%
+          \fi
+        \fi\fi\fi
+        \ifPDFTeX
+          \advisorreview@listentry
+        \else\ifLuaTeX
+          \advisorreview@listentry
+        \else\ifXeTeX
+          \advisorreview@listentry
+        \fi\fi\fi
+      \endgroup
     \else
-      \textsuperscript{\textcolor{red}{[review note]}}%
+      \ifmmode
+        \vadjust{\smash{\hbox{\textcolor{red}{[review note]}}}}%
+      \else
+        \textsuperscript{\textcolor{red}{[review note]}}%
+      \fi
     \fi
   \fi
 }
 
-\newcommand{\pdfrevnote}[1]{%
-  \ifadvisorreviewcomments
-    \ifadvisorreviewpdfcomment
-      \pdfcomment[icon=Note,author={\advisorreviewauthor},subject={Revision note}]{#1}%
-    \else
-      \textsuperscript{\textcolor{red}{[review note]}}%
-    \fi
+\newcommand{\advisorreview@listentry}{%
+  \addcontentsline{lpc}{lpcsec}{\protect\numberline{}\advisorreviewauthor\ - Revision note}%
+}
+
+\newcommand{\advisorreviewcomment}[1]{\advisorreview@comment{Comment}{#1}}
+\newcommand{\pdfrevnote}[1]{\advisorreview@comment{Note}{#1}}
+
+\newcommand{\advisorreview@textmark}[2]{%
+  \ifadvisorreviewhighlight
+    \begingroup\color{advisorreviewblue}#1\endgroup
+    \advisorreviewcomment{#2}%
+  \else
+    #1%
   \fi
 }
 
 \newcommand{\pdfrevmark}[2]{%
-  \ifadvisorreviewhighlight
-    {\color{advisorreviewblue}#1}%
-    \advisorreviewcomment{#2}%
+  \ifmmode
+    \expandafter\pdfrevformula
   \else
-    #1%
-  \fi
+    \expandafter\advisorreview@textmark
+  \fi{#1}{#2}%
 }
 
-\newcommand{\pdfrevmath}[2]{%
-  \ifadvisorreviewhighlight
-    {\color{advisorreviewblue}#1}%
-    \advisorreviewcomment{#2}%
-  \else
-    #1%
-  \fi
+\newcommand{\pdfrevmath}[2]{\pdfrevmark{#1}{#2}}
+
+\newcommand{\advisorreview@mathmark}[2]{%
+  \advisorreviewcomment{#2}%
+  \mathcolor{advisorreviewblue}{#1}%
 }
 
 \newcommand{\pdfrevformula}[2]{%
   \ifadvisorreviewhighlight
-    \mathchoice
-      {{\color{advisorreviewblue}\displaystyle #1}}%
-      {{\color{advisorreviewblue}\textstyle #1}}%
-      {{\color{advisorreviewblue}\scriptstyle #1}}%
-      {{\color{advisorreviewblue}\scriptscriptstyle #1}}%
-    \ifadvisorreviewcomments
-      \mbox{\advisorreviewcomment{#2}}%
-    \fi
+    \expandafter\advisorreview@mathmark
   \else
-    #1%
-  \fi
+    \expandafter\@firstoftwo
+  \fi{#1}{#2}%
 }
 
-\newcommand{\pdfrevblock}[2]{%
-  \ifadvisorreviewhighlight
-    \par\smallskip\noindent
-    {\color{advisorreviewblue}#1}%
-    \advisorreviewcomment{#2}%
-    \par\smallskip
-  \else
-    #1%
-  \fi
-}
+\newcommand{\pdfrevblock}[2]{\advisorreview@textmark{#1}{#2}}
+\makeatother
 
 \newcommand{\printpdfreviewlist}{%
   \ifadvisorreviewcomments

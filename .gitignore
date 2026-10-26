@@ -22,6 +22,7 @@ __pycache__/
 # Local generated clean examples
 examples/*_clean_source.tex
 examples/*.pdf
+tests/_build/
 
 # OS/editor
 .DS_Store

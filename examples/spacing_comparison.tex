@@ -1,0 +1,40 @@
+% !TEX root = spacing_comparison.tex
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage[advisor]{advisorreview}
+\pagestyle{empty}
+\newcommand{\unmarked}[2]{#1}
+% Reproduce the previous implementation for this comparison only.
+\newcommand{\previousmark}[2]{%
+  \mathchoice
+    {{\color{advisorreviewblue}\displaystyle #1}}%
+    {{\color{advisorreviewblue}\textstyle #1}}%
+    {{\color{advisorreviewblue}\scriptstyle #1}}%
+    {{\color{advisorreviewblue}\scriptscriptstyle #1}}%
+  \mbox{}%
+}
+\newcommand{\comparisonformulas}[1]{%
+  \[
+    A_e\left(\bar e(t)+#1{\bar x}{State correction}\right)\,dt+D_e\,d\omega
+  \]
+  \[
+    \int_0^r A_\zeta\left(\bar e(#1{s}{Integration variable})+\bar x\right)\,ds
+  \]
+  \[
+    W(\mathcal G_1(q))#1{=}{Equality}\lambda W(q),\qquad
+    #1{D^+}{Dini derivative}W\leq 2\sqrt{W}\,\widetilde H_1(\bar e)
+  \]
+  \[
+    a#1{+}{Binary operator}b#1{\leq}{Relation}c,
+    \qquad #1{\sum}{Operator limits}_{k=1}^n k
+  \]
+}
+\begin{document}
+\section*{Formula spacing: before and after}
+\noindent\textbf{1. Unmarked source (reference)}
+\comparisonformulas{\unmarked}
+\noindent\textbf{2. Previous macro (spacing and operator limits change)}
+\comparisonformulas{\previousmark}
+\noindent\textbf{3. Fixed macro (same layout as the reference, with comments)}
+\comparisonformulas{\pdfrevformula}
+\end{document}

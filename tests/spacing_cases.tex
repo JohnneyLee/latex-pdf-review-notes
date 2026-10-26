@@ -1,0 +1,72 @@
+\documentclass{article}
+\usepackage{amsmath,amsthm}
+\ifdefined\ReviewMode
+  \edef\LoadReviewPackage{\noexpand\usepackage[\ReviewMode]{advisorreview}}%
+  \LoadReviewPackage
+\else
+  \newcommand{\pdfrevnote}[1]{}
+  \newcommand{\pdfrevmark}[2]{#1}
+  \newcommand{\pdfrevmath}[2]{#1}
+  \newcommand{\pdfrevformula}[2]{#1}
+  \newcommand{\pdfrevblock}[2]{#1}
+\fi
+\newtheorem{theorem}{Theorem}
+\pagestyle{empty}
+\newcommand{\measuremath}[2]{%
+  \setbox0=\hbox{\(\displaystyle #2\)}%
+  \typeout{REVIEW-DIM:#1:\the\wd0:\the\ht0:\the\dp0}%
+}
+\begin{document}
+\measuremath{relation}{a\pdfrevformula{=}{Measured relation}b}
+\measuremath{binary}{a\pdfrevformula{+}{Measured operator}b}
+\measuremath{unary}{(\pdfrevformula{+}{Measured unary plus}b)}
+\measuremath{limits}{\pdfrevformula{\sum}{Measured sum}\limits_{k=1}^n k}
+\measuremath{scripts}{\pdfrevformula{x}{Measured subscript}_k+\pdfrevformula{x}{Measured superscript}^2}
+\noindent Formula fragments, with ordinary TeX spacing:
+\[
+  A_e\left(\bar e(t)+\pdfrevformula{\bar x}{State correction}\right)\,dt+D_e\,d\omega
+\]
+\[
+  e(t)+\int_0^r A_\zeta\left(\bar e(\pdfrevformula{s}{Integration variable})+\bar x\right)\,ds
+\]
+\[
+  W(\mathcal G_1(q))\pdfrevformula{=}{Equality}\lambda W(q),\qquad
+  \pdfrevformula{D^+}{Dini derivative}W\leq 2\sqrt{W}\,\widetilde H_1(\bar e)
+\]
+\[
+  a\pdfrevformula{+}{Binary operator}b\pdfrevformula{\leq}{Relation}c,
+  \qquad \pdfrevformula{\sin}{Function}(x)+\pdfrevformula{\sum}{Sum}_{k=1}^n k
+\]
+\[
+  \pdfrevformula{x}{External subscript}_k+
+  \pdfrevformula{x}{External superscript}^2+
+  x_{\pdfrevformula{i+1}{Script style}}+
+  x^{y_{\pdfrevformula{j+1}{Nested script style}}}
+\]
+\[
+  (\pdfrevformula{+}{Unary plus}b),\quad
+  \pdfrevformula{\sum}{Explicit limits}\limits_{k=1}^n k,\quad
+  \pdfrevformula{\int_0^1}{Integral} x\,dx,\quad
+  a\pdfrevmark{=}{Math-mode text macro}b
+\]
+\begin{equation*}
+  \check y_k(t_k^+)=y(t_k)+h_y\left(k,\pdfrevformula{\check y_{k-1}(t_k-y(t_k))}{Corrected symbol}\right)
+\end{equation*}
+\begin{align*}
+  a&\pdfrevformula{=}{Alignment relation}b+\pdfrevformula{c}{Alignment variable},\\
+  x&\leq \pdfrevformula{\frac{1}{1+t}}{Fraction}.
+\end{align*}
+\noindent Inline: \pdfrevmath{\(\alpha_k>0\)}{Positivity} and
+\pdfrevmark{short revised text}{Wording}, punctuation stays here.
+
+\noindent Sentence before. \pdfrevblock{This sentence stays in the same
+paragraph and contains \(x_k\), a citation-like reference, and enough words
+to exercise line wrapping at the normal text width.}{Sentence revision}
+Sentence after.
+
+\begin{theorem}
+\pdfrevblock{If \(x=0\), then \(x^2=0\).}{Theorem content}
+\end{theorem}
+\noindent Text after the theorem.\pdfrevnote{Standalone note}
+Sentence spacing after a note stays unchanged.
+\end{document}
