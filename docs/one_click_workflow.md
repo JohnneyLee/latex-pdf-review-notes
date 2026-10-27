@@ -12,7 +12,9 @@
   Publish the two named PDFs and clean source only after both modes succeed.
 - Detect edits to exported clean source using a saved SHA-256 hash and refuse
   to overwrite modified or unowned exports. Never delete user files.
-- Install only the personal `.sty` and a user-level LaTeX Workshop recipe.
+- Install the personal `.sty`, two standalone runtime scripts in
+  `%LOCALAPPDATA%\latex-pdf-review-notes`, and a user-level LaTeX Workshop recipe.
+  The recipe must not depend on the download directory after setup.
   Preserve the existing XeLaTeX default engine, other recipes, settings/comments,
   and existing tasks. Do not change PATH, system TeX configuration, or add watchers.
 
@@ -48,7 +50,13 @@ The normal VS Code Build action uses the new default recipe
 `Advisor Review: both PDFs + clean source`. Reload the window if the recipe
 list has not refreshed. The manuscript needs only the usual package declaration
 and review macros. No project-local tool copy, task, or manual wrapper is needed.
-The tool repository must stay at its configured location.
+The installed recipe calls `%LOCALAPPDATA%\latex-pdf-review-notes\build_advisor_review.py`,
+which imports the installed `clean_advisor_review.py` beside it. The download
+directory can be moved or deleted after successful installation. Keep the
+installed directory, personal macro package, Python and TeX tools available.
+The optional `--runtime-home` selects a different permanent scripts directory.
+Rerun setup from a fresh download to update installed copies, or with a new Python
+interpreter if its location changes. No `.cmd` is used by the installed recipe.
 
 For `main_review_work.tex`, named outputs are written into
 `.advisorreview/main_review_work/`: `main_advisor.pdf`, `main_reviewer.pdf`, and
@@ -88,6 +96,53 @@ snapshot prevents later automatic overwrites. The working manuscript is retained
 Generated evidence is retained under `tests/_build/` and
 `examples/.advisorreview/`. Real installation/backup paths are recorded locally
 in `.advisorreview/installation.json`, which is ignored by Git.
+
+## Standalone installation update (2026-10-27)
+
+The earlier 2026-10-26 installation copied only the macro package and pointed
+VS Code at scripts in the repository. That version required the repository to
+remain in place. The current installer also copies the two runtime scripts and
+points the recipe at those copies; its Node/TypeScript integration remains a
+setup-only dependency. Read all required payloads before modifying any files.
+Existing changed files receive timestamped backups; repeated installation with
+unchanged payloads does not duplicate recipes or script backups.
+
+The installation record now also lives at `<runtime>/installation.json`, so it
+survives removal of the download. A copy remains in the download's ignored
+`.advisorreview/installation.json`. This is not a realtime edit history and is
+separate from each manuscript's clean-export ownership manifest.
+
+Verification performed on 2026-10-27:
+
+- `python -m unittest discover -s tests -v`: 15 tests passed in 67.359 seconds.
+  The four installation tests cover an explicit runtime path and JSONC
+  preservation/idempotence; the default runtime path plus builds without the
+  original download path; upgrade backups; and missing-payload refusal before
+  changing scripts, macro package or settings.
+- The unavailable-download test installs from a project-owned copy, renames
+  that download directory, and runs the command extracted from the generated
+  settings in a separate manuscript directory. It removes inherited TEXINPUTS
+  and PYTHONPATH overrides. Both PDFs, all five macro types, independent clean
+  compilation, unchanged source and ordinary compilation pass. Recorder evidence
+  confirms the installed personal package. No original user directory was moved
+  or deleted to perform this test.
+- Upgraded the actual user installation: scripts are now under
+  `C:\Users\Johnn\AppData\Local\latex-pdf-review-notes`. The actual user settings
+  were backed up as `settings.json.advisorreview.bak-20261027T034404723985Z`.
+  Parsed comparisons against that backup confirm only the build-script path
+  changed; the existing Python path, XeLaTeX engine, other tools, recipes and
+  unrelated setting values remain unchanged.
+- Executed the exact real installed recipe command (substituting its document
+  and output-directory placeholders) in `tests/_build/installed_runtime_demo/`,
+  containing no tool files or local latexmkrc. XeLaTeX generated five advisor
+  comments, zero reviewer comments and clean source without supported review
+  code. The clean source compiled independently, and the ordinary manuscript
+  produced only its normal PDF. Its recorder loads the personal `.sty`.
+- The graphical VS Code Build button was not automated. Verification scripts,
+  sample manuscripts and generated evidence are retained under `tests/_build/`.
+  The sandbox redirects LOCALAPPDATA and cannot start this TeX runtime reliably
+  (WinError 623), so the real installation and compiler checks used approved
+  ordinary local processes. No dependency installation or PATH change occurred.
 
 ## Boundaries and recovery
 

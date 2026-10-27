@@ -46,7 +46,7 @@ advisorreview.sty             LaTeX package with review macros
 clean_advisor_review.py       Clean-source generator
 clean_advisor_review.cmd      Windows launcher for the clean-source generator
 build_advisor_review.py       One Build: normal compile, then both PDFs + clean source if enabled
-install_advisor_review.py     Personal package + VS Code user-level recipe installer
+install_advisor_review.py     Personal package/scripts + VS Code user-level recipe installer
 integration/                 Comment-preserving VS Code settings integration
 examples/                     Minimal LaTeX example project
 ```
@@ -77,7 +77,7 @@ PDF reader:
 
 ## One-Time Setup For Local VS Code Use
 
-On Windows, keep this tool repository in a stable directory. With Python 3.10+,
+On Windows, the downloaded repository is needed only for setup or updates. With Python 3.10+,
 TeX Live/latexmk, Node.js, and VS Code with LaTeX Workshop already installed, run once from this
 repository (the installer downloads nothing):
 
@@ -87,7 +87,8 @@ python .\install_advisor_review.py
 ```
 
 The installer copies `advisorreview.sty` into the personal `TEXMFHOME/tex/latex/`
-tree, then adds one user-level LaTeX Workshop recipe named
+tree and the two runtime scripts into `%LOCALAPPDATA%\latex-pdf-review-notes`.
+It then adds one user-level LaTeX Workshop recipe named
 `Advisor Review: both PDFs + clean source` and selects it as the default. It
 infers the existing standard pdfLaTeX/XeLaTeX/LuaLaTeX engine, preserves other
 recipes/settings and JSONC comments, and backs up existing files before changing
@@ -99,7 +100,22 @@ option, or extra extension is installed.
 Reload VS Code if needed. In a manuscript, load `amsmath` before `advisorreview`
 as usual, insert the existing review macros, and use the ordinary Build action.
 No copying tool files, per-project task file, or manual advisor/reviewer wrapper
-is needed with this workflow. The repository must remain at its configured path.
+is needed with this workflow. **After a successful installation, moving or deleting
+the downloaded repository does not affect builds.** The installed recipe calls
+the personal script copy, not the download. The `.cmd` launcher is not used.
+
+```text
+%LOCALAPPDATA%\latex-pdf-review-notes\
+  build_advisor_review.py                   Installed one-click build entry
+  clean_advisor_review.py                   Imported by the build entry
+  installation.json                        Installation paths and backup names
+```
+
+Keep this installed directory, the personal macro package, Python, and TeX tools
+in place. This is a personal installation, not a self-contained executable.
+Node.js and the downloaded integration script are used only during setup/updates,
+not during daily builds. Advanced installations can set `--runtime-home <directory>`;
+that installed directory must then remain available.
 
 For a working file named `main_review_work.tex`, one successful Build produces:
 
@@ -146,7 +162,7 @@ advisor acceptance.
 For a terminal build without VS Code:
 
 ```powershell
-python C:\path\to\latex-pdf-review-notes\build_advisor_review.py .\main_review_work.tex --engine xelatex
+python "$env:LOCALAPPDATA\latex-pdf-review-notes\build_advisor_review.py" .\main_review_work.tex --engine xelatex
 ```
 
 Compiler mode is explicit in this command. The installed recipe uses the engine
@@ -155,9 +171,16 @@ steps, keep using its existing recipe or configure an appropriate project recipe
 Workspace-level settings can override user settings. Select the new recipe
 explicitly if such an override prevents the user-level default from taking effect.
 
-After updating this tool, rerun the installer to synchronize the personal `.sty`.
+After updating this tool, rerun the installer from the new download to synchronize
+both the personal `.sty` and installed runtime scripts. Merely moving the download
+does not require reinstallation. If Python itself moves, rerun setup with the new
+interpreter to update the recipe's Python path.
 A project-local copy can still take precedence over the personal installation.
-Installation paths and backup names are recorded in `.advisorreview/installation.json`.
+Installation paths and backup names are recorded in the installed
+`installation.json` and mirrored in the download's `.advisorreview/installation.json`.
+Existing changed runtime scripts and settings are backed up before replacement;
+unchanged files do not create additional backups or duplicate recipes. This record
+describes installation, unlike a manuscript export's `manifest.json`.
 
 ## Portable Project Workflow
 
@@ -501,6 +524,20 @@ MIT License. See [LICENSE](LICENSE).
 Node.js，不会联网安装依赖。它会记录本次使用的 Python 解释器位置，因此
 之后日常 Build 无需输入 Python 的完整路径。
 
+安装成功后，编译和清理脚本位于固定的个人工具目录：
+
+```text
+C:\Users\Johnn\AppData\Local\latex-pdf-review-notes\
+  build_advisor_review.py
+  clean_advisor_review.py
+  installation.json
+```
+
+这是本机的路径；其他使用者对应自己的 `%LOCALAPPDATA%`。VS Code 调用这里的
+脚本，不调用下载目录中的脚本或 `clean_advisor_review.cmd`。因此安装成功后，
+**移动或删除下载的项目文件夹不会影响一键编译**。不要删除这个已安装目录或
+个人宏包目录；Python 和原有 TeX 工具仍然必须保留。日常编译不需要 Node.js。
+
 ### 2. 导言区与正文怎么写
 
 在工作稿导言区加载宏包。宏包声明和作者设置各占一行，方便之后清理源码。
@@ -609,19 +646,28 @@ MB_LD.pdf                           编辑器正常输出/预览位置，可受 
 如果其中仍引用原项目的图片、文献或未修改输入文件，应保留这些资源，并从
 原论文目录编译它；当前导出不是自动打包的独立投稿项目。
 
-### 6. 工具更新或移动目录之后
+### 6. 工具更新、移动下载目录与恢复
 
-日常改论文不用重新安装。更新工具代码、更新 `.sty` 或移动工具仓库后，
-从工具仓库目录重新运行安装器，并按需重载 VS Code：
+日常改论文不用重新安装，移动或删除下载目录也不用重新安装。此前安装的旧版
+仍指向下载目录，需要用新版安装器更新一次，才能获得这个效果。
+以后只有更新工具代码、更新 `.sty`，或者 Python 解释器位置发生改变时，才需要
+从新下载的工具目录重新运行安装器，并按需重载 VS Code：
 
 ```powershell
 python .\install_advisor_review.py --dry-run
 python .\install_advisor_review.py
 ```
 
-重新安装会同步个人目录中的宏包，并更新构建入口路径。它会在改动已有文件前
+重新安装会同步个人目录中的宏包和两个运行脚本，并更新构建入口路径。它会在改动已有文件前
 保存 `.advisorreview.bak-*` 备份，不会重复添加同名配方。保留这些备份以便恢复
-原设置。工具仓库 `.advisorreview/installation.json` 记录本次安装路径。
+原设置。安装目录中的 `installation.json` 记录本次安装路径及本次备份路径，下载目录
+`.advisorreview/installation.json` 也保留一份。即使下载目录不再存在，安装记录仍在。
+这与每篇论文导出目录内的 `manifest.json` 不同：后者只用于核对干净源码是否被手改，
+不是实时监控或逐次修改历史。
+
+不要移动已安装的 `%LOCALAPPDATA%\latex-pdf-review-notes` 目录。若误删或移动了
+已安装目录，重新下载工具后运行安装器即可恢复。安装不改 PATH，不需要管理员权限，
+也不会下载 Python 或 LaTeX 依赖；现有目录权限不足时应停止处理权限问题。
 
 旧论文目录如果还放着自己的 `advisorreview.sty`，可能优先加载旧副本；项目的
 `latexmkrc` 也可能另设查找路径。判断实际使用哪份宏包，应检查编译 `.log` 或
@@ -638,6 +684,8 @@ python .\install_advisor_review.py
 | 提示 `single-file review sources` | 其他被输入的 `.tex` 文件中还有审阅代码。当前自动清理仅支持审阅代码集中在一个工作稿，不能静默当成已全部清理。 |
 | 更换作者后，干净源码无法导出 | 作者设置应单独使用示例中的 `\renewcommand{\advisorreviewauthor}{...}` 一行；旧的自定义审阅设置可能不在清理器支持范围内。 |
 | 宏包更新后效果仍旧 | 检查是否加载了项目内旧 `.sty`、是否重新运行安装器，以及 `latexmkrc` 是否优先指向另一份副本。 |
+| 移动下载目录后仍提示找不到脚本 | 可能仍是旧版安装配置。用新版安装器更新一次，确认配方指向个人工具目录，而不是下载目录。 |
+| Python 或已安装脚本找不到 | 保留 Python 和个人安装目录；若 Python 路径已改变，使用新解释器重新运行安装器。 |
 
 当前个人安装面向本机 Windows 标准 VS Code 用户配置和标准 LaTeX 编译器。
 其他电脑、不同 VS Code 配置文件、WSL、远程环境和 Overleaf 需要各自配置；
