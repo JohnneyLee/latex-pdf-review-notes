@@ -131,7 +131,9 @@ def clean_review_macros(text: str) -> str:
             raise ValueError(f"\\{macro_name} is missing its second braced argument")
 
         _, after_arg2 = parse_braced_group(text, arg2_start)
-        out.append(clean_kept_argument(arg1))
+        # A retained argument may itself contain review marks.  Clean that
+        # balanced fragment before returning it to the surrounding source.
+        out.append(clean_review_macros(clean_kept_argument(arg1)))
         i = after_arg2
 
     return "".join(out)

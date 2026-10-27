@@ -592,7 +592,11 @@ The cleanup script removes:
 - `\pdfrevblock`
 - `\printpdfreviewlist`
 
-It uses balanced-brace parsing for the supported review macros. It is not a full TeX parser.
+It uses balanced-brace parsing for the supported review macros. Retained first
+arguments are cleaned recursively, so supported review macros may be nested
+without leaking review code into the clean export. Adjacent marks are still
+preferred when separate note ownership is clearer. The cleaner is not a full
+TeX parser.
 
 ## Known Limitations
 
@@ -872,6 +876,8 @@ MB_LD.pdf                           编辑器正常输出/预览位置，可受 
 
 不要只注释掉 `\usepackage{advisorreview}` 却留下正文中的 `\pdfrevmark` 等命令，
 否则 LaTeX 会报未定义命令。干净源码已处理这些命令，不需要逐条手删。
+受支持的审阅命令即使嵌在另一个审阅命令保留的正文参数中，也会被递归清理；
+若两条批注分别对应不同文字，仍建议写成相邻标记，以便源码更清楚。
 如果其中仍引用原项目的图片、文献或未修改输入文件，应保留这些资源，并从
 原论文目录编译它；当前导出不是自动打包的独立投稿项目。
 
