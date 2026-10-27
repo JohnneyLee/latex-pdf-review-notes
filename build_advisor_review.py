@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Build normally, then export both review PDFs and clean source when enabled."""
+"""Build normally; export review files only when review commands actually execute."""
 
 from __future__ import annotations
 
@@ -37,8 +37,23 @@ def compile_tex(source: Path, cwd: Path, out_dir: Path, engine: str, label: str)
     result = subprocess.run(command, cwd=cwd, capture_output=True, text=True,
                             encoding="utf-8", errors="replace")
     if result.returncode:
-        raise BuildError(f"Build failed ({label}).\n" + "\n".join(
-            (result.stdout + result.stderr).splitlines()[-30:]))
+        details = "\n".join((result.stdout + result.stderr).splitlines()[-30:])
+        hint = ""
+        log_path = out_dir / (source.stem + ".log")
+        if log_path.is_file():
+            log = log_path.read_text(encoding="utf-8", errors="replace")
+            details = f"Log: {log_path}\n" + "\n".join(log.splitlines()[-35:]) + "\n" + details
+            undefined = re.search(r"Undefined control sequence\.\s*([^\n]*)", log)
+            if undefined:
+                # TeX's first error-context line ends at the undefined command.
+                commands = re.findall(r"\\([A-Za-z@]+)", undefined[1])
+                fls = log_path.with_suffix(".fls")
+                inputs = recorded_inputs(fls, cwd) if fls.is_file() else set()
+                if (commands and commands[-1] in ALL_REVIEW_MACROS
+                        and not any(path.name.lower() == "advisorreview.sty" for path in inputs)):
+                    hint = (f"Review command \\{commands[-1]} was executed, but advisorreview.sty was not loaded.\n"
+                            "Add \\usepackage{advisorreview} in the preamble (after amsmath when used), then rebuild.\n")
+        raise BuildError(f"Build failed ({label}).\n" + hint + details)
     pdf = out_dir / (source.stem + ".pdf")
     if not pdf.is_file() or not pdf.read_bytes().startswith(b"%PDF-"):
         raise BuildError(f"No valid PDF was produced: {pdf}")
@@ -107,8 +122,21 @@ def build(source: Path, engine: str, out_dir: Path | None = None) -> dict[str, s
     normal_out = (out_dir or source.parent).resolve()
     normal_pdf = compile_tex(source, source.parent, normal_out, engine, "normal document")
     inputs = recorded_inputs(normal_pdf.with_suffix(".fls"), source.parent)
-    if not any(path.name.lower() == "advisorreview.sty" for path in inputs):
+    packages = sorted(path for path in inputs if path.name.lower() == "advisorreview.sty")
+    if not packages:
         print(f"Normal document: no review exports needed.\nPDF: {normal_pdf}")
+        return {"pdf": str(normal_pdf)}
+
+    log = normal_pdf.with_suffix(".log").read_text(encoding="utf-8", errors="replace")
+    usage = re.findall(r"^ADVISORREVIEW-USED:(yes|no)\s*$", log, re.MULTILINE)
+    if not usage:
+        raise BuildError("The loaded advisorreview.sty has no review-command usage report. "
+                         "Update/reinstall the package and build scripts together; "
+                         f"a project-local old copy may override the installation. Loaded: {packages[0]}")
+    if usage[-1] == "no":
+        print("Normal document: advisorreview loaded, but no review commands were used.\n"
+              "No review exports were created or refreshed; existing exports were retained.\n"
+              f"PDF: {normal_pdf}")
         return {"pdf": str(normal_pdf)}
 
     output = source.parent / ".advisorreview" / source.stem
@@ -119,7 +147,6 @@ def build(source: Path, engine: str, out_dir: Path | None = None) -> dict[str, s
     manifest = output / "manifest.json"
     check_export(clean_path, manifest, source)
     cleaned = validate_clean_source(source, inputs, original.decode("utf-8-sig"))
-    log = normal_pdf.with_suffix(".log").read_text(encoding="utf-8", errors="replace")
     modes = re.findall(r"ADVISORREVIEW-MODE:(advisor|reviewer|clean)", log)
     normal_mode = modes[-1] if modes else None
     pdfs = {}

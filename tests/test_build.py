@@ -89,6 +89,148 @@ class BuildTests(unittest.TestCase):
         self.assertTrue(self.source.with_suffix(".pdf").exists())
         self.assertFalse((self.project / ".advisorreview").exists())
 
+    def test_loaded_package_without_used_commands_is_normal(self):
+        for mode in ("advisor", "reviewer", "clean"):
+            with self.subTest(mode=mode):
+                self.source = self.project / f"unused_{mode}.tex"
+                self.source.write_text(
+                    "\\documentclass{article}\n\\usepackage{amsmath}\n"
+                    + f"\\usepackage[{mode}]{{advisorreview}}\n"
+                    + "\\renewcommand{\\advisorreviewauthor}{A User}\n"
+                    + "\\begin{document}No review commands here.\\end{document}\n",
+                    encoding="utf-8")
+                result = self.invoke()
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn("no review commands were used", result.stdout.lower())
+                self.assertTrue(self.source.with_suffix(".pdf").is_file())
+                self.assertFalse((self.project / ".advisorreview").exists())
+
+    def test_inactive_commented_literal_and_unexpanded_commands_do_not_trigger(self):
+        (self.project / "inactive.tex").write_text(
+            "% \\pdfrevblock{A comment}{Not executed}\n"
+            "\\iffalse\\pdfrevnote{Not executed}\\fi\n"
+            "\\newcommand{\\unusedreview}{\\pdfrevmark{Unused}{Not executed}}\n"
+            "\\verb|\\pdfrevmark{Literal text}{Not executed}|\n", encoding="utf-8")
+        self.source.write_text(
+            "\\documentclass{article}\n\\usepackage{advisorreview}\n"
+            "\\begin{document}\\input{inactive}\\end{document}\n", encoding="utf-8")
+        result = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertFalse((self.project / ".advisorreview").exists())
+
+    def test_each_review_command_triggers_even_when_normal_mode_is_clean(self):
+        cases = {
+            "pdfrevnote": r"\pdfrevnote{Only a note}",
+            "pdfrevmark": r"\pdfrevmark{Only blue text}{}",
+            "pdfrevmath": r"\pdfrevmath{\(a>0\)}{Inline math}",
+            "pdfrevformula": r"\[a\pdfrevformula{=}{Math}b\]",
+            "pdfrevblock": r"\pdfrevblock{A sentence.}{Block note}",
+        }
+        for name, body in cases.items():
+            with self.subTest(command=name):
+                self.source = self.project / f"{name}.tex"
+                self.source.write_text(
+                    "\\documentclass{article}\n\\usepackage{amsmath}\n"
+                    "\\usepackage[clean]{advisorreview}\n\\begin{document}\n"
+                    + "A baseline sentence. {" + body + "}\n\\end{document}\n", encoding="utf-8")
+                result = self.invoke()
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                output = self.project / ".advisorreview" / self.source.stem
+                self.assertTrue((output / f"{name}_advisor.pdf").is_file())
+                self.assertTrue((output / f"{name}_reviewer.pdf").is_file())
+                self.assertTrue((output / f"{name}_clean_source.tex").is_file())
+                log = self.source.with_suffix(".log").read_text(encoding="utf-8", errors="replace")
+                self.assertIn("ADVISORREVIEW-USED:yes", log)
+
+    def test_end_document_review_command_is_detected(self):
+        self.source.write_text(
+            "\\documentclass{article}\n\\usepackage{advisorreview}\n"
+            "\\AtEndDocument{\\pdfrevnote{A final note}}\n"
+            "\\begin{document}An end-hook note.\\end{document}\n", encoding="utf-8")
+        result = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        output = self.project / ".advisorreview" / self.source.stem
+        self.assertEqual(len(self.notes(output / "paper_advisor.pdf")), 1)
+
+    def test_used_command_without_package_has_actionable_error(self):
+        cases = {
+            "pdfrevnote": r"\pdfrevnote{Missing package}",
+            "pdfrevmark": r"\pdfrevmark{Changed}{Missing package}",
+            "pdfrevmath": r"\pdfrevmath{\(a>0\)}{Missing package}",
+            "pdfrevformula": r"\[\pdfrevformula{a=b}{Missing package}\]",
+            "pdfrevblock": r"\pdfrevblock{A sentence.}{Missing package}",
+        }
+        for name, body in cases.items():
+            with self.subTest(command=name):
+                self.source = self.project / f"missing_{name}.tex"
+                self.source.write_text(
+                    "\\documentclass{article}\n\\usepackage{amsmath}\n"
+                    "\\begin{document}\n" + body + "\n\\end{document}\n", encoding="utf-8")
+                result = self.invoke()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("advisorreview.sty was not loaded", result.stderr)
+                self.assertIn(r"\usepackage{advisorreview}", result.stderr)
+                self.assertIn("\\" + name, result.stderr)
+                self.assertFalse((self.project / ".advisorreview").exists())
+
+    def test_inactive_command_without_package_is_not_an_error(self):
+        self.source.write_text(
+            "\\documentclass{article}\n\\begin{document}\n"
+            "\\iffalse\\pdfrevmark{Not used}{Not used}\\fi\n"
+            "Ordinary document.\\end{document}\n", encoding="utf-8")
+        result = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertFalse((self.project / ".advisorreview").exists())
+
+    def test_other_undefined_commands_do_not_get_missing_package_advice(self):
+        for loaded in (False, True):
+            with self.subTest(package_loaded=loaded):
+                self.source = self.project / f"unrelated_{loaded}.tex"
+                setup = "\\usepackage{advisorreview}\n" if loaded else ""
+                body = (r"\pdfrevmark{\unknowncommand}{A note}" if loaded
+                        else r"\unknowncommand \pdfrevmark{Not reached}{Not reached}")
+                self.source.write_text("\\documentclass{article}\n" + setup
+                                       + "\\begin{document}\n" + body
+                                       + "\n\\end{document}\n", encoding="utf-8")
+                result = self.invoke()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("advisorreview.sty was not loaded", result.stderr)
+                self.assertIn("Undefined control sequence", result.stderr)
+
+    def test_removing_all_marks_keeps_existing_exports_unchanged(self):
+        self.write_source()
+        result = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        output = self.project / ".advisorreview" / self.source.stem
+        clean = output / "paper_clean_source.tex"
+        clean.write_bytes(clean.read_bytes() + b"% A user's archived edits.\n")
+        before = {path: (path.read_bytes(), path.stat().st_mtime_ns)
+                  for path in output.rglob("*") if path.is_file()}
+        self.source.write_text(
+            "\\documentclass{article}\n\\usepackage{advisorreview}\n"
+            "\\begin{document}All marks removed.\\end{document}\n", encoding="utf-8")
+        for _ in range(2):
+            result = self.invoke()
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn("existing exports were retained", result.stdout.lower())
+            after = {path: (path.read_bytes(), path.stat().st_mtime_ns)
+                     for path in output.rglob("*") if path.is_file()}
+            self.assertEqual(after, before)
+
+    def test_old_package_without_usage_report_requires_update(self):
+        (self.project / "advisorreview.sty").write_text(
+            "\\ProvidesPackage{advisorreview}[2000/01/01 Old package fixture]\n"
+            "\\newcommand{\\pdfrevmark}[2]{#1}\n", encoding="utf-8")
+        self.source.write_text(
+            "\\documentclass{article}\n\\usepackage{advisorreview}\n"
+            "\\begin{document}\\pdfrevmark{Changed}{Note}\\end{document}\n", encoding="utf-8")
+        result = self.invoke()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("usage report", result.stderr.lower())
+        self.assertIn("update", result.stderr.lower())
+        self.assertIn(str(self.project / "advisorreview.sty"), result.stderr)
+        self.assertFalse((self.project / ".advisorreview").exists())
+
     def test_clean_mode_source_still_produces_both_marked_versions(self):
         self.write_source(setup=r"\usepackage[clean]{advisorreview}")
         result = self.invoke()

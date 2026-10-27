@@ -2,9 +2,12 @@
 
 ## Accepted behavior
 
-- One Build produces both advisor/reviewer PDFs and a clean LaTeX source.
-- A normal document that does not actually load advisorreview follows the
-  existing compiler route and produces no new review artifacts.
+- One Build produces both advisor/reviewer PDFs and clean source only if a
+  supported review command actually executes in the normal compile.
+- A document with no executed review commands follows the normal compiler route,
+  even with the package loaded. Do not create or refresh review artifacts.
+- A used but undefined review command without the package must fail with a
+  specific missing-package hint, retaining the original LaTeX error.
 - Keep the original source and all review macros. Do not create manual wrapper
   files in the manuscript directory. Generated wrappers/cache belong in
   `.advisorreview/<working-source-stem>/`.
@@ -63,6 +66,9 @@ For `main_review_work.tex`, named outputs are written into
 `main_clean_source.tex`. The editor's ordinary root PDF remains at its normal
 location. The clean source is an automatically refreshed snapshot; editing that
 snapshot prevents later automatic overwrites. The working manuscript is retained.
+These extra outputs are conditional on actual review-command execution. Removing
+all marks makes the next Build normal-only; every existing export/cache file is
+retained unchanged and is not a result of that latest normal-only build.
 
 ## Verification record (2026-10-26)
 
@@ -143,6 +149,73 @@ Verification performed on 2026-10-27:
   The sandbox redirects LOCALAPPDATA and cannot start this TeX runtime reliably
   (WinError 623), so the real installation and compiler checks used approved
   ordinary local processes. No dependency installation or PATH change occurred.
+
+## Runtime usage routing (2026-10-27)
+
+The package-loading-only rule was replaced with execution tracking. Each of the
+five supported public review commands sets one global flag without adding any
+layout material. The LaTeX `enddocument/afterlastpage` hook prints
+`ADVISORREVIEW-USED:yes|no`, including commands executed by end-document hooks.
+This requires LaTeX 2020-10-01 or newer. The flag counts TeX execution, not proof
+that content is visible in a shipped page; measuring/boxed content can execute.
+
+The builder still performs the normal build first. With no loaded package it
+returns the normal PDF; with the package loaded but `USED:no`, it also returns
+only the normal PDF and explicitly reports that previous exports were retained.
+It does not create, validate, rewrite or remove the review output tree in this
+case, even when an old clean export has been hand-edited. Used commands still
+trigger both review modes and clean export in clean/reviewer preview modes.
+
+On a failed build, the builder retains the original log/error and adds a hint
+only when the first undefined command is a supported review command and the
+recorder shows that the package was not loaded. Other undefined commands are
+not reclassified. Missing usage reports in old local package copies stop with
+an update instruction and the loaded package path rather than silently skipping
+review export.
+
+Verified after resuming the interrupted task:
+
+- `python -m unittest discover -s tests -v`: all **26 tests passed**, 219.509
+  seconds. This includes all five commands, empty explanations, grouped calls,
+  clean preview, unused packages in all three modes, comments/verbatim/uncalled
+  macros/inactive input branches, late end hooks, five missing-package errors,
+  unrelated errors, old package refusal, nested cleaning, installation tests,
+  resources/bibliography and spacing/color/author/Unicode regressions.
+- Marked-to-unmarked builds preserve the entire existing export tree's bytes
+  and modification timestamps, including a deliberately edited clean-source
+  fixture; repeating a cached normal-only build also preserves it.
+- The packaged desktop app resolves the former AppData runtime path into its
+  private LocalCache even when given explicitly. Read-only previews confirmed
+  this; the installer itself was not rewritten to guess around it. The real
+  installation now uses the supported explicit runtime option:
+  `--runtime-home C:\Users\Johnn\texmf\scripts\advisorreview`. The original
+  AppData installation remains untouched. Daily Build still uses the same recipe.
+- Installation refreshed the personal package and standalone scripts, retained
+  XeLaTeX, and backed up changed files. This run's backup names end in
+  `advisorreview.sty.advisorreview.bak-20261027T075844570871Z` and
+  `settings.json.advisorreview.bak-20261027T075844571716Z`. The parsed settings
+  comparison confirms only the tool's script path changed, not other settings,
+  recipes, tools, engine arguments or the Python interpreter.
+- The exact installed recipe command/placeholder substitutions were executed
+  on a fresh project without local tool files or inherited TEXINPUTS/PYTHONPATH.
+  Loaded-but-unused produced only normal PDF. Active markers produced five
+  advisor comments, zero reviewer comments, and clean source that compiled
+  independently. Removing markers while retaining the package kept exports
+  unchanged; a separate missing-package input produced the explicit hint and
+  original undefined-command error. A separate ordinary input built normally.
+- **35 pre-existing export/cache files** under the example and earlier real
+  installation demo retained identical SHA-256 hashes and modification times.
+  Evidence, source snapshots, expected error log and `verification.json` are
+  retained in `tests/_build/usage_routing_real_install/`. No actual VS Code UI
+  click was automated; its configured command was tested directly.
+
+One acceptance attempt intentionally removed the package from a previously
+marked test job and failed earlier while reading stale `.aux` data containing
+`\ulp@afterend`. That was not an executed missing review command and was correctly
+left as the original error. The failed fixture was retained; separate fresh
+inputs were then used to verify the missing-package and ordinary routes. This
+cache boundary is documented in README. No auxiliary files or old PDFs were
+automatically deleted to obtain a passing result.
 
 ## Boundaries and recovery
 

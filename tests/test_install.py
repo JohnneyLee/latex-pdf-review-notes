@@ -160,6 +160,11 @@ class InstallTests(unittest.TestCase):
         build(ordinary)
         self.assertTrue(ordinary.with_suffix(".pdf").is_file())
         self.assertFalse((manuscript / ".advisorreview" / "ordinary").exists())
+        exports = {path: path.read_bytes() for path in output.rglob("*") if path.is_file()}
+        source.write_text("\\documentclass{article}\n\\usepackage{advisorreview}\n"
+                          "\\begin{document}No review commands.\\end{document}\n", encoding="utf-8")
+        build(source)
+        self.assertEqual({path: path.read_bytes() for path in output.rglob("*") if path.is_file()}, exports)
 
     def test_update_backs_up_runtime_and_does_not_add_recipes(self):
         project, download, settings, command, env = self.isolated_install()
