@@ -189,7 +189,9 @@ Verified after resuming the interrupted task:
   this; the installer itself was not rewritten to guess around it. The real
   installation now uses the supported explicit runtime option:
   `--runtime-home C:\Users\Johnn\texmf\scripts\advisorreview`. The original
-  AppData installation remains untouched. Daily Build still uses the same recipe.
+  AppData installation remained in place at that verification stage; the
+  explicit cleanup recorded below later removed it. Daily Build still uses the
+  same recipe.
 - Installation refreshed the personal package and standalone scripts, retained
   XeLaTeX, and backed up changed files. This run's backup names end in
   `advisorreview.sty.advisorreview.bak-20261027T075844570871Z` and
@@ -217,6 +219,33 @@ inputs were then used to verify the missing-package and ordinary routes. This
 cache boundary is documented in README. No auxiliary files or old PDFs were
 automatically deleted to obtain a passing result.
 
+## Explicit old-runtime cleanup (2026-10-27)
+
+The user subsequently requested removal of the inactive installation rather
+than retaining it for comparison. The active VS Code entry was verified to use
+`C:\Users\Johnn\texmf\scripts\advisorreview\build_advisor_review.py`; project
+configuration searches found no remaining reference to the old AppData runtime.
+The logical old AppData path and its packaged-app LocalCache path were verified
+to identify the same directory, not two independent installations.
+
+Cleanup validated the exact absolute target and every child: only the two old
+scripts, their installation record, old in-directory backups and Python bytecode
+were allowed; unexpected files, subdirectories or reparse points would stop the
+operation. Native PowerShell removed that one inactive directory: **6 files,
+34,962 bytes**. Both old path aliases were then absent, and the active script
+still existed. No manuscript, PDF/source export, personal macro package, active
+runtime or settings backup outside that old directory was deleted.
+
+README documents the same migration/cleanup boundary in English and Chinese.
+This does not introduce automatic cleanup or a new background process.
+After cleanup, a fresh XeLaTeX smoke build through the active installed script
+still produced both PDFs and clean source: one advisor comment, zero reviewer
+comments, and no supported review tokens in the clean source. This check wrote
+only a new `tests/_build/post_cleanup_smoke/` fixture; it did not rebuild or
+overwrite the existing exported manuscripts. No program logic changed during
+cleanup/publication; the preceding 26-test regression result remains the recorded
+full-suite check, not a claim that the full suite ran again at publication time.
+
 ## Boundaries and recovery
 
 This installer targets standard Windows VS Code user settings, not arbitrary
@@ -233,4 +262,5 @@ directory, or prepare a submission bundle separately.
 The installer backs up each changed existing file beside it using a timestamped
 `.advisorreview.bak-*` suffix. Preserve those backups if restoring the previous
 user configuration is needed. The pre-existing README working-tree changes were
-retained and extended, not reverted. Nothing was pushed to GitHub.
+retained and extended, not reverted. Installation and verification do not publish
+automatically; publishing is a separate action requiring user authorization.

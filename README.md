@@ -389,6 +389,26 @@ Existing changed runtime scripts and settings are backed up before replacement;
 unchanged files do not create additional backups or duplicate recipes. This record
 describes installation, unlike a manuscript export's `manifest.json`.
 
+### Removing An Inactive Previous Installation
+
+An old runtime copy is not required after migration has succeeded. To reclaim
+space, first reload VS Code, verify one Build, and check the actual
+`advisor-review-build` script path in user **and project** settings. Only then
+remove the previous runtime directory if nothing still points to it.
+
+The removable directory contains the old `build_advisor_review.py`,
+`clean_advisor_review.py`, `installation.json`, bytecode cache and any backups
+inside that old directory. Do not remove the active runtime, the installed
+`advisorreview.sty`, the whole `TEXMFHOME`/AppData directory, a manuscript folder,
+or `.advisorreview` PDF/source exports. If unexpected files or directory links
+are present, inspect them before deleting anything. Do not delete a path just
+because it resembles an example in this README.
+
+This is optional, explicit cleanup, not an automatic installer action. Moving
+the download needs no reinstall; moving the **active installed runtime** still
+requires updating the recipe. Retaining old installations for comparison is
+not necessary for normal use.
+
 ## Portable Project Workflow
 
 The original project-local workflow below remains supported for collaboration,
@@ -1021,7 +1041,7 @@ python .\install_advisor_review.py
    先重新设置 `$Python`。如果 Python 本身移动了，使用新的解释器重新安装，才能更新
    配方记录的位置。曾用 `--runtime-home` 自选安装目录的，更新时也传入相同目录。
 
-例如，本机当前为避开应用的 AppData 重定向，使用个人 TeX 脚本目录。**只有已采用
+例如，如果为避开应用的 AppData 重定向而使用个人 TeX 脚本目录，**只有已采用
 这个自选目录的安装**，才从新下载目录运行下面这组更新命令；默认安装用户仍用前面的
 普通命令，不必额外执行：
 
@@ -1040,7 +1060,17 @@ python .\install_advisor_review.py --runtime-home "$env:USERPROFILE\texmf\script
 这与每篇论文导出目录内的 `manifest.json` 不同：后者只用于核对干净源码是否被手改，
 不是实时监控或逐次修改历史。
 
-不要移动已安装的 `%LOCALAPPDATA%\latex-pdf-review-notes` 目录。若误删或移动了
+**旧安装可以删除，不需要为对比长期保留。** 先刷新 VS Code、成功 Build 一次，
+并确认用户级和项目级配置的 `advisor-review-build` 都不再指向旧路径，再删除确认
+停用的旧脚本目录。删除范围仅限该目录内的旧运行脚本、安装记录、字节码缓存和旧备份。
+如果其中有其他文件、目录链接，或无法确认是否仍在使用，先检查，不要直接递归删除。
+
+不要删除当前生效的脚本目录、个人安装的 `advisorreview.sty`、整个 `TEXMFHOME` 或
+AppData、论文文件夹和 `.advisorreview` 中的 PDF/干净源码。安装器不会自动清理这些
+文件；旧安装清理需要单独确认，不应与论文审阅导出混为一谈。
+
+不要移动当前生效的安装目录（默认 `%LOCALAPPDATA%\latex-pdf-review-notes`，自选路径
+以配方记录为准）。若误删或移动了
 已安装目录，重新下载工具后运行安装器即可恢复。安装不改 PATH，不需要管理员权限，
 也不会下载 Python 或 LaTeX 依赖；现有目录权限不足时应停止处理权限问题。
 
