@@ -6,9 +6,10 @@ Source-level LaTeX review notes that become blue revision-text PDF drafts for ad
 
 It is designed for manuscript revision workflows where authors need to show changes to advisors, supervisors, collaborators, or reviewers without manually editing the generated PDF.
 
-Start here: [Daily use](#daily-use-after-personal-installation) |
+Start here: [First installation](#one-time-setup-for-local-vs-code-use) |
+[Daily use](#daily-use-after-personal-installation) |
+[Updating](#updating-an-installed-copy) |
 [中文使用指南](#中文使用指南) |
-[One-time setup](#one-time-setup-for-local-vs-code-use) |
 [Portable project workflow](#portable-project-workflow).
 
 ## What It Produces
@@ -32,6 +33,19 @@ Start here: [Daily use](#daily-use-after-personal-installation) |
    The clean `.tex` snapshot is exported in the same directory automatically.
 5. Continue editing the original working source and rebuild. Do not edit the
    generated clean snapshot unless you intend to stop automatic replacement.
+
+Preamble setup (keep each declaration on its own line):
+
+```latex
+\usepackage{amsmath}
+\usepackage{advisorreview}
+\renewcommand{\advisorreviewauthor}{Your Name}
+```
+
+The author line is optional; the default is `Johnnie`. For example, put
+`\pdfrevmark{revised text}{Reason for the revision.}` in the document body.
+See [Macro Reference](#macro-reference) for inline math, display math, longer text
+and standalone notes. Use the same marked working source for both PDF versions.
 
 No tool files, project task configuration, manual wrapper, or separate cleaning
 command is needed for this installed workflow. A document that does not load
@@ -67,8 +81,10 @@ and operator limits inside the marked argument. No packages are downloaded.
 
 Runtime for clean-source export:
 
-- Python 3
-- On Windows, use `clean_advisor_review.cmd` so users do not need to know the full Python path.
+- Python 3.10+ for the installed one-click workflow; no Python libraries need to
+  be installed separately for normal use.
+- The portable/manual Windows cleaner can use `clean_advisor_review.cmd`.
+  The installed one-click workflow does not use that launcher.
 
 PDF reader:
 
@@ -77,14 +93,89 @@ PDF reader:
 
 ## One-Time Setup For Local VS Code Use
 
-On Windows, the downloaded repository is needed only for setup or updates. With Python 3.10+,
-TeX Live/latexmk, Node.js, and VS Code with LaTeX Workshop already installed, run once from this
-repository (the installer downloads nothing):
+This installer targets **Windows desktop VS Code with LaTeX Workshop**, using
+standard user settings and an existing TeX Live installation. For Overleaf or a
+machine without this personal installation, use the separate
+[portable workflow](#portable-project-workflow). Git is not required to install.
+
+### 1. Download And Extract
+
+Download the ZIP from [the GitHub repository](https://github.com/JohnneyLee/latex-pdf-review-notes)
+using **Code > Download ZIP**, then extract it completely. Do not run the
+installer from inside the ZIP. Open the extracted folder in Windows Terminal /
+PowerShell; it must contain `install_advisor_review.py`, `advisorreview.sty`,
+both runtime `.py` files, and the `integration` folder. Keep that folder together
+until setup succeeds; do not copy only the installer into your manuscript.
+
+All command blocks labeled `powershell` below are for **PowerShell**, not CMD,
+the Python prompt, or the LaTeX source editor. Do not copy the `PS C:\...>` prompt.
+Run installation/update commands from the extracted tool folder, not the paper
+folder. For example, after replacing this illustrative path with your real one:
+
+```powershell
+Set-Location "C:\path\to\latex-pdf-review-notes-main"
+Test-Path .\install_advisor_review.py
+```
+
+`Test-Path` must return `True` before proceeding.
+
+### 2. Check Existing Dependencies
+
+You need Python 3.10+, Node.js, TeX Live with latexmk and the packages listed
+above, desktop VS Code, and its LaTeX Workshop extension. Run these checks one
+line at a time:
+
+```powershell
+python --version
+node --version
+code --version
+code --list-extensions | Select-String "latex-workshop"
+latexmk -v
+kpsewhich -var-value=TEXMFHOME
+kpsewhich pdfcomment.sty
+kpsewhich hyperref.sty
+kpsewhich xcolor.sty
+kpsewhich amsmath.sty
+```
+
+Confirm Python is at least 3.10, LaTeX Workshop is listed, latexmk actually runs,
+and each `kpsewhich` lookup prints a path. Stop if a command fails or a required
+package is missing; resolve the specific dependency before continuing. The
+installer downloads nothing and does not install Python, Node.js, extensions or
+LaTeX packages, change PATH, or elevate privileges. A full regression-test
+environment (Pillow/pypdf and PDF command-line tools) is not needed for normal use.
+
+If `python` is not recognized or resolves to the wrong program, do not assume
+`py` is available. Locate your real `python.exe`, replace the example path below,
+and use PowerShell's `&` to invoke it. Never reuse another person's Python path:
+
+```powershell
+$Python = "C:\path\to\python.exe"
+& $Python --version
+& $Python .\install_advisor_review.py --dry-run
+& $Python .\install_advisor_review.py
+```
+
+Use either this explicit-interpreter route or the normal route below, not both.
+The installer remembers the interpreter used, so daily builds do not depend on
+the `python` alias. If `node`, `code`, `latexmk`, or `kpsewhich` is missing from
+the terminal, fix that command's availability separately.
+
+### 3. Preview And Install
+
+When `python` works, run these from the extracted tool folder:
 
 ```powershell
 python .\install_advisor_review.py --dry-run
 python .\install_advisor_review.py
 ```
+
+Run the first command, inspect the printed paths and `Preserved compiler`, and
+only then run the second. `--dry-run` changes no files. With no configured user
+build tools, the default engine is pdfLaTeX; unsupported existing compiler chains
+may stop setup rather than fall back. Do not assume every installation selects
+XeLaTeX. A failed preview is a stop condition, not a reason to force installation.
+Success ends with `Installed and verified.`; an error message is not success.
 
 The installer copies `advisorreview.sty` into the personal `TEXMFHOME/tex/latex/`
 tree and the two runtime scripts into `%LOCALAPPDATA%\latex-pdf-review-notes`.
@@ -97,7 +188,26 @@ PATH, system-wide TeX configuration, existing tasks, and auto-build/auto-clean
 settings are not changed. No watcher, save hook, scheduled job, shell-escape
 option, or extra extension is installed.
 
-Reload VS Code if needed. In a manuscript, load `amsmath` before `advisorreview`
+### 4. Reload And Check The Installation
+
+In VS Code, open the Command Palette with `Ctrl+Shift+P` and run
+`Developer: Reload Window`. Then use `LaTeX Workshop: Build with recipe` and
+select `Advisor Review: both PDFs + clean source` for the first build.
+The installer selects this user-level default; project settings may override it.
+
+In PowerShell, these checks should both return `True`:
+
+```powershell
+Test-Path "$env:LOCALAPPDATA\latex-pdf-review-notes\build_advisor_review.py"
+Test-Path "$env:LOCALAPPDATA\latex-pdf-review-notes\clean_advisor_review.py"
+```
+
+From your manuscript folder (outside the downloaded tool folder), also run
+`kpsewhich --all advisorreview.sty` to check the personal package is discoverable.
+This checks installation, not that a manuscript compiles; validate the first
+real Build and the three named outputs below before relying on the workflow.
+
+In a manuscript, load `amsmath` before `advisorreview`
 as usual, insert the existing review macros, and use the ordinary Build action.
 No copying tool files, per-project task file, or manual advisor/reviewer wrapper
 is needed with this workflow. **After a successful installation, moving or deleting
@@ -171,10 +281,35 @@ steps, keep using its existing recipe or configure an appropriate project recipe
 Workspace-level settings can override user settings. Select the new recipe
 explicitly if such an override prevents the user-level default from taking effect.
 
-After updating this tool, rerun the installer from the new download to synchronize
-both the personal `.sty` and installed runtime scripts. Merely moving the download
-does not require reinstallation. If Python itself moves, rerun setup with the new
-interpreter to update the recipe's Python path.
+## Updating An Installed Copy
+
+1. Download and extract the new GitHub ZIP into a **new folder**, keeping any
+   local modifications in the old download. Downloading alone does not update the
+   installed scripts. There is no automatic updater.
+2. Open PowerShell in that new folder. Confirm `Test-Path .\install_advisor_review.py`
+   returns `True`, then preview and install with the same two commands:
+
+```powershell
+python .\install_advisor_review.py --dry-run
+python .\install_advisor_review.py
+```
+
+3. Stop on preview/install errors. After `Installed and verified.`, reload VS Code,
+   build an existing marked working manuscript, and verify both named PDFs and
+   the clean source. Do not edit your manuscript or recreate wrapper files just
+   to update the tool.
+4. The installer synchronizes the personal `.sty` **and** both runtime scripts,
+   preserving the detected engine and unrelated settings. Existing changed files
+   receive timestamped backups; unchanged payloads do not duplicate recipes or
+   backups. Installed copies do not follow edits made in a download automatically.
+
+If you used an explicit Python path, use the same `& $Python ...` installation
+commands instead, redefining `$Python` in a new PowerShell session. If Python
+itself moved, invoke the installer with its new executable so the recipe is
+updated. Use the same `--runtime-home` on updates if you chose a custom directory.
+Merely moving or deleting the downloaded folder needs no reinstall. Do not move
+or delete the personal installed runtime directory.
+
 A project-local copy can still take precedence over the personal installation.
 Installation paths and backup names are recorded in the installed
 `installation.json` and mirrored in the download's `.advisorreview/installation.json`.
@@ -509,31 +644,110 @@ MIT License. See [LICENSE](LICENSE).
 
 ## 中文使用指南
 
-### 1. 今后从哪里开始
+### 1. 首次下载与安装（每台电脑一次）
 
-个人安装只需执行一次。在已经完成安装的电脑上，日常不需要再运行安装器，
-也不需要向每个论文项目复制 `.sty`、Python 脚本或 `.cmd`。
+本节是 Windows 桌面版 VS Code + LaTeX Workshop 的推荐流程，不要求安装 Git。
+Overleaf、WSL、远程环境或其他编辑器请采用 Portable Project Workflow，不能直接
+沿用这套本机用户配置。
+
+**第一步：下载并完整解压。** 打开
+[GitHub 仓库](https://github.com/JohnneyLee/latex-pdf-review-notes)，选择
+Code > Download ZIP。把 ZIP 完整解压，进入能看到 `install_advisor_review.py`
+的文件夹；不要在压缩包里直接运行，也不要只复制安装器到论文目录。
+安装期间需要同目录的宏包、两个运行脚本以及 `integration` 子目录。
+
+下面的终端命令全部在 **PowerShell** 执行，不是在 CMD、Python 交互窗口或
+`.tex` 编辑区执行。不要把终端提示符 `PS C:\...>` 一并复制。
+在解压目录中打开 PowerShell，或将示例路径替换为自己实际的解压路径：
+
+```powershell
+Set-Location "C:\path\to\latex-pdf-review-notes-main"
+Test-Path .\install_advisor_review.py
+```
+
+第二行必须返回 `True`。若为 `False`，先找到正确目录，不要继续安装。
+
+**第二步：检查已有环境。** 需要 Python 3.10+、Node.js、TeX Live/latexmk、
+桌面版 VS Code，以及其中的 LaTeX Workshop 扩展。逐行执行：
+
+```powershell
+python --version
+node --version
+code --version
+code --list-extensions | Select-String "latex-workshop"
+latexmk -v
+kpsewhich -var-value=TEXMFHOME
+kpsewhich pdfcomment.sty
+kpsewhich hyperref.sty
+kpsewhich xcolor.sty
+kpsewhich amsmath.sty
+```
+
+Python 版本应不低于 3.10；扩展检查应有 LaTeX Workshop；latexmk 应能运行；
+各项宏包查询应输出路径。任何命令失败或必需宏包查不到，先停下来补齐对应环境。
+工具不会替你安装这些依赖、联网安装宏包、修改 PATH 或提升权限。
+普通使用不需要安装 pypdf、Pillow 等开发测试依赖。
+
+**第三步：先预览，再安装。** 仍在工具解压目录，先执行第一行，检查输出的
+个人目录、VS Code 设置位置与 `Preserved compiler`，确认没有错误后再执行第二行：
+
+```powershell
+python .\install_advisor_review.py --dry-run
+python .\install_advisor_review.py
+```
+
+`--dry-run` 不修改文件；最后出现 `Installed and verified.` 才表示安装器完成。
+安装器会沿用能识别的用户编译配置；未配置用户构建工具时默认 pdfLaTeX，不是
+固定使用 XeLaTeX。已有编译链不能识别时可能停止安装，并非一律回退默认值。
+预览或安装报错时，不要直接跳到编译论文。
+
+如果 `python` 命令不可用、指向错误程序或报告“没有关联的应用程序”，先找到
+自己真正的 `python.exe`。将下面的示例路径换成实际路径后，改用这一组命令，
+无需照搬作者电脑上的用户名和 Python 安装位置，也不要求必须有 `py` 命令：
+
+```powershell
+$Python = "C:\path\to\python.exe"
+& $Python --version
+& $Python .\install_advisor_review.py --dry-run
+& $Python .\install_advisor_review.py
+```
+
+同样先确认版本和预览结果再安装；两种安装写法选一种即可。`&` 是 PowerShell
+调用带引号路径的写法。`$Python` 只在当前终端会话中有效，但安装器会把实际
+解释器路径保存到 VS Code 配方，之后日常 Build 不需要再设置这个变量。
+若缺的是 `node`、`code` 或 TeX 命令，则需另外解决相应命令不可用的问题。
+
+**第四步：刷新并检查。** 在 VS Code 按 `Ctrl+Shift+P`，执行
+`Developer: Reload Window`。可在 PowerShell 检查两个运行脚本，正常都返回 `True`：
+
+```powershell
+Test-Path "$env:LOCALAPPDATA\latex-pdf-review-notes\build_advisor_review.py"
+Test-Path "$env:LOCALAPPDATA\latex-pdf-review-notes\clean_advisor_review.py"
+```
+
+再进入自己的论文目录（不要停留在下载目录），执行 `kpsewhich --all advisorreview.sty`，
+应能找到个人宏包副本。安装检查成功不等于论文编译成功；继续按第 2、3 节在工作稿
+中添加审阅命令并 Build，以实际生成三份产物作为首次使用的完成标准。
+
+个人安装只需执行一次。日常不需要再运行安装器，也不需要向每个论文项目复制
+`.sty`、Python 脚本或 `.cmd`。
 
 用 VS Code 打开论文所在的文件夹，在现有论文根文件中使用本工具即可。
 例如已有 `MB_LD.tex`，可以直接把它作为工作稿；**不强制复制或重命名为
 `MB_LD_review_work.tex`，也不需要手工建立 `MB_LD_advisor.tex` 和
 `MB_LD_reviewer.tex`**。是否另存工作稿，由自己的版本管理习惯决定。
 
-如果是另一位使用者的新电脑，先按英文 One-Time Setup 一节安装一次。
-安装器需要已有 Python 3.10+、TeX Live/latexmk、VS Code、LaTeX Workshop 和
-Node.js，不会联网安装依赖。它会记录本次使用的 Python 解释器位置，因此
-之后日常 Build 无需输入 Python 的完整路径。
-
 安装成功后，编译和清理脚本位于固定的个人工具目录：
 
 ```text
-C:\Users\Johnn\AppData\Local\latex-pdf-review-notes\
+%LOCALAPPDATA%\latex-pdf-review-notes\
   build_advisor_review.py
   clean_advisor_review.py
   installation.json
 ```
 
-这是本机的路径；其他使用者对应自己的 `%LOCALAPPDATA%`。VS Code 调用这里的
+`%LOCALAPPDATA%` 表示各使用者自己的本地应用数据目录；在 PowerShell 命令里写为
+`$env:LOCALAPPDATA`，不要把 `%LOCALAPPDATA%` 原样当作 PowerShell 变量。VS Code 调用这里的
 脚本，不调用下载目录中的脚本或 `clean_advisor_review.cmd`。因此安装成功后，
 **移动或删除下载的项目文件夹不会影响一键编译**。不要删除这个已安装目录或
 个人宏包目录；Python 和原有 TeX 工具仍然必须保留。日常编译不需要 Node.js。
@@ -578,7 +792,7 @@ C:\Users\Johnn\AppData\Local\latex-pdf-review-notes\
 Macro Reference。数学片段的 `\left...\right` 必须配对，不要跨越宏参数边界。
 不要在 `\pdfrevblock` 的第一个参数中放空白行。
 
-### 3. 一次 Build，同时得到三份产物
+### 3. 日常一键编译，同时得到三份产物
 
 保存工作稿后，使用 LaTeX Workshop 的 Build。安装器已经将
 `Advisor Review: both PDFs + clean source` 设置为用户级默认编译配方。
@@ -599,6 +813,21 @@ Macro Reference。数学片段的 `\left...\right` 必须配对，不要跨越�
 原来已经开启的“保存时编译”设置会继续生效，因此保存也可能触发同一流程。
 本工具没有新增后台监控或保存钩子。两种 PDF 需要分别排版，单次操作不代表
 只执行一次 LaTeX 编译；它会复用已完成的对应模式，并保留编译缓存。
+
+日常最短操作就是：**打开论文文件夹 → 修改并保存工作稿 → 点击 Build → 取出两份
+PDF 和干净源码**。不要为两份 PDF 来回修改宏包选项，也不需要另外运行清理脚本。
+首次检查时，应同时确认导师版有批注、审稿人版无本工具批注、两版修改文字均为蓝色，
+并确认原工作稿仍保留审阅命令。
+
+若临时不用 VS Code，可在论文目录运行已安装入口。下面以 XeLaTeX 为例；按论文
+实际编译器把 `xelatex` 换成 `pdflatex` 或 `lualatex`，不必改变论文原有编译器：
+
+```powershell
+python "$env:LOCALAPPDATA\latex-pdf-review-notes\build_advisor_review.py" .\MB_LD.tex --engine xelatex
+```
+
+这是备用命令，不是日常 Build 的额外必做步骤。若当前 `python` 命令不可用，可用
+前面设置的 `& $Python` 代替 `python`；VS Code 配方本身已记录安装时的解释器路径。
 
 ### 4. 输出在哪里，应该给谁
 
@@ -650,13 +879,24 @@ MB_LD.pdf                           编辑器正常输出/预览位置，可受 
 
 日常改论文不用重新安装，移动或删除下载目录也不用重新安装。此前安装的旧版
 仍指向下载目录，需要用新版安装器更新一次，才能获得这个效果。
-以后只有更新工具代码、更新 `.sty`，或者 Python 解释器位置发生改变时，才需要
-从新下载的工具目录重新运行安装器，并按需重载 VS Code：
+**下载新版不会自动更新已经安装的副本**，也没有后台自动更新功能。以后更新按以下顺序：
+
+1. 从 GitHub 重新下载 ZIP，解压到一个新文件夹。旧下载目录如有自己的改动，先保留，
+   不要直接覆盖它；无需先卸载旧工具，也无需修改论文。
+2. 在新解压目录打开 PowerShell，执行 `Test-Path .\install_advisor_review.py`，确认
+   返回 `True`。先运行下面第一行预览，确认没有错误后再运行第二行安装：
 
 ```powershell
 python .\install_advisor_review.py --dry-run
 python .\install_advisor_review.py
 ```
+
+3. 出现 `Installed and verified.` 后，在 VS Code 执行 `Developer: Reload Window`。
+   用现有的带标记工作稿 Build 一次，检查导师版、审稿人版和干净源码均更新。
+   不用重建两个包装 `.tex`，也不用重新插入审阅宏。
+4. 如果使用 Python 完整路径，更新时同样采用 `& $Python ...`，在新 PowerShell 会话
+   先重新设置 `$Python`。如果 Python 本身移动了，使用新的解释器重新安装，才能更新
+   配方记录的位置。曾用 `--runtime-home` 自选安装目录的，更新时也传入相同目录。
 
 重新安装会同步个人目录中的宏包和两个运行脚本，并更新构建入口路径。它会在改动已有文件前
 保存 `.advisorreview.bak-*` 备份，不会重复添加同名配方。保留这些备份以便恢复
