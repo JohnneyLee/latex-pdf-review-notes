@@ -97,6 +97,23 @@ class BuildTests(unittest.TestCase):
         self.assertEqual(len(self.notes(output / "paper_advisor.pdf")), 2)
         self.assertEqual(len(self.notes(output / "paper_reviewer.pdf")), 0)
 
+    def test_nested_review_marks_export_clean_source(self):
+        self.source.write_text(
+            "\\documentclass{article}\n\\usepackage{advisorreview}\n"
+            "\\begin{document}\n"
+            r"\pdfrevblock{Outer text \pdfrevmark{inner text}{Inner note}.}{Outer note}"
+            "\n\\end{document}\n",
+            encoding="utf-8",
+        )
+        result = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        output = self.project / ".advisorreview" / self.source.stem
+        self.assertEqual(len(self.notes(output / "paper_advisor.pdf")), 2)
+        self.assertEqual(len(self.notes(output / "paper_reviewer.pdf")), 0)
+        cleaned = (output / "paper_clean_source.tex").read_text(encoding="utf-8")
+        self.assertIn("Outer text inner text.", cleaned)
+        self.assertNotIn(r"\pdfrev", cleaned)
+
     def test_edited_clean_export_is_not_overwritten(self):
         self.write_source()
         result = self.invoke()
