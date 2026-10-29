@@ -55,7 +55,8 @@ class InstallTests(unittest.TestCase):
         self.assertIn(b"An unrelated user comment", updated)
         self.assertIn(b'"editor.wordWrap": "on"', updated)
         self.assertIn(b'"name": "old-xe"', updated)
-        self.assertIn(b"both PDFs + clean source", updated)
+        self.assertIn(b"latexmk (advisor)", updated)
+        self.assertIn(b'"latex-workshop.latex.recipe.default": "Existing"', updated)
         self.assertIn(b'"xelatex"', updated)
         for name in ("build_advisor_review.py", "clean_advisor_review.py"):
             self.assertEqual((runtime / name).read_bytes(), (ROOT / name).read_bytes())
@@ -98,6 +99,38 @@ class InstallTests(unittest.TestCase):
                    "--settings", str(settings), "--texmf-home", env["TEXMFHOME"],
                    "--typescript", str(typescript)]
         return project, download, settings, command, env
+
+    def test_migrates_old_recipe_and_keeps_xelatex_default(self):
+        project, download, settings, command, env = self.isolated_install()
+        original = {
+            "editor.wordWrap": "on",
+            "latex-workshop.latex.tools": [
+                {"name": "advisor-review-build", "command": "python", "args": ["old", "--engine", "xelatex"]},
+                {"name": "latexmk-xelatex", "command": "latexmk", "args": ["-xelatex", "-synctex=1", "%DOC%"]},
+                {"name": "other", "command": "other", "args": ["--keep"]}],
+            "latex-workshop.latex.recipes": [
+                {"name": "Advisor Review: both PDFs + clean source", "tools": ["advisor-review-build"]},
+                {"name": "latexmk (XeLaTeX)", "tools": ["latexmk-xelatex"]},
+                {"name": "Other", "tools": ["other"]}],
+            "latex-workshop.latex.recipe.default": "Advisor Review: both PDFs + clean source"}
+        settings.write_text(json.dumps(original, indent=2), encoding="utf-8")
+        for _ in range(2):
+            result = subprocess.run(command, env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            config = json.loads(settings.read_text(encoding="utf-8"))
+            self.assertEqual(config["latex-workshop.latex.recipe.default"], "latexmk (XeLaTeX)")
+            names = [item["name"] for item in config["latex-workshop.latex.recipes"]]
+            self.assertEqual(names, ["latexmk (advisor)", "latexmk (XeLaTeX)", "Other"])
+            self.assertEqual(config["latex-workshop.latex.recipes"][1:], original["latex-workshop.latex.recipes"][1:])
+            self.assertEqual(config["latex-workshop.latex.tools"][1:], original["latex-workshop.latex.tools"][1:])
+            self.assertEqual(config["editor.wordWrap"], "on")
+        config["latex-workshop.latex.recipes"].insert(0, original["latex-workshop.latex.recipes"][0])
+        settings.write_text(json.dumps(config, indent=2), encoding="utf-8")
+        result = subprocess.run(command, env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        config = json.loads(settings.read_text(encoding="utf-8"))
+        self.assertEqual([item["name"] for item in config["latex-workshop.latex.recipes"]],
+                         ["latexmk (advisor)", "latexmk (XeLaTeX)", "Other"])
 
     def test_default_runtime_survives_unavailable_download_and_builds_normally(self):
         from pypdf import PdfReader

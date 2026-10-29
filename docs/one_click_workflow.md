@@ -49,9 +49,9 @@ python .\install_advisor_review.py --dry-run
 python .\install_advisor_review.py
 ```
 
-The normal VS Code Build action uses the new default recipe
-`Advisor Review: both PDFs + clean source`. Reload the window if the recipe
-list has not refreshed. The manuscript needs only the usual package declaration
+Use the ordinary `latexmk (XeLaTeX)` default for normal builds, and explicitly
+choose `latexmk (advisor)` when review exports are needed. Reload the window if
+the recipe list has not refreshed. The manuscript needs only the usual package declaration
 and review macros. No project-local tool copy, task, or manual wrapper is needed.
 The installed recipe calls `%LOCALAPPDATA%\latex-pdf-review-notes\build_advisor_review.py`,
 which imports the installed `clean_advisor_review.py` beside it. The download

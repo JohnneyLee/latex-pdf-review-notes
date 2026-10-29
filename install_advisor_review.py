@@ -91,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Installed scripts: {runtime}")
         print(f"VS Code settings: {settings}")
         print(f"Preserved compiler: {proposed['engine']}")
-        print("Changes: copy two runtime scripts; update one tool and one default recipe.")
+        print("Changes: copy two runtime scripts; update the review recipe and preserve a normal default when available.")
         print("After installation, the download directory is not needed for builds.")
         print("All other recipes/settings/comments/tasks remain in place. PATH is unchanged.")
         if args.dry_run:
